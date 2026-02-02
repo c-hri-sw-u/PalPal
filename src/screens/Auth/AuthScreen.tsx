@@ -134,13 +134,13 @@ const styles = StyleSheet.create({
   button: {
     width: '100%',
     padding: SPACING.md,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.text,
     borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
     marginTop: SPACING.sm,
   },
   buttonText: {
-    color: '#fff',
+    color: COLORS.background,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -149,7 +149,8 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
   },
   switchText: {
-    color: COLORS.primary,
+    color: COLORS.text,
     fontSize: 14,
+    textDecorationLine: 'underline',
   },
 });
