@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants';
 import { uploadImage, generateFilePath, STORAGE_BUCKETS } from '../../lib/storage';
 import { useAuth } from '../../hooks/useAuth';
