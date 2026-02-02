@@ -19,16 +19,33 @@ export default function HomeScreen() {
   }, [user]);
 
   const loadPals = async () => {
-    const { data, error } = await supabase
-      .from('pals')
-      .select('*')
-      .eq('owner_id', user?.id)
-      .order('created_at', { ascending: false });
+    // Timeout after 10 seconds to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.log('loadPals timeout - forcing loading to false');
+      setLoading(false);
+    }, 10000);
 
-    if (!error && data) {
-      setPals(data);
+    try {
+      console.log('Loading pals for user:', user?.id);
+      const { data, error } = await supabase
+        .from('pals')
+        .select('*')
+        .eq('owner_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      console.log('Supabase response:', { error, dataCount: data?.length });
+
+      if (error) {
+        console.error('Supabase error:', error);
+      }
+
+      setPals(data || []);
+    } catch (e) {
+      console.error('loadPals exception:', e);
+    } finally {
+      clearTimeout(timeoutId);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleCreatePal = () => {
