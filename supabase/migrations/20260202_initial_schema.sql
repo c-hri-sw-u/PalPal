@@ -24,7 +24,8 @@ CREATE TABLE pals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   owner_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
-  photo_urls TEXT[] DEFAULT '{}'::text[], -- [front, back, left, right]
+  avatar_url TEXT, -- Single avatar photo for AI profile
+  full_body_photos TEXT[] DEFAULT '{}'::text[], -- [front, back, left, right] for Nano generation
   mbti TEXT,
   traits JSONB DEFAULT '{}'::jsonb, -- {extraversion, agreeableness, openness, conscientiousness, neuroticism}
   backstory TEXT,

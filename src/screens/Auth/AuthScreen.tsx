@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { supabase } from '../lib/supabase';
-import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
+import { supabase } from '../../lib/supabase';
+import { COLORS, SPACING, BORDER_RADIUS } from '../../constants';
 
 export default function AuthScreen() {
   const navigation = useNavigation<any>();
@@ -18,7 +18,7 @@ export default function AuthScreen() {
     }
 
     setLoading(true);
-    
+
     try {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
@@ -42,8 +42,8 @@ export default function AuthScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
@@ -62,7 +62,7 @@ export default function AuthScreen() {
             autoCapitalize="none"
             keyboardType="email-address"
           />
-          
+
           <TextInput
             style={styles.input}
             placeholder="Password"
@@ -72,8 +72,8 @@ export default function AuthScreen() {
             secureTextEntry
           />
 
-          <TouchableOpacity 
-            style={styles.button} 
+          <TouchableOpacity
+            style={styles.button}
             onPress={handleAuth}
             disabled={loading}
           >
@@ -83,7 +83,7 @@ export default function AuthScreen() {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.switchButton}
           onPress={() => setIsLogin(!isLogin)}
         >

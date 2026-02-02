@@ -45,16 +45,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    if (!error && data) {
-      setUser(data);
+      if (error) {
+        console.warn('Error fetching user profile:', error);
+        // If the error is about type mismatch, try without .single()
+        if (error.message?.includes('type') || error.message?.includes('boolean')) {
+          const { data: users } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId);
+          if (users && users.length > 0) {
+            setUser(users[0]);
+          }
+        }
+      } else if (data) {
+        setUser(data);
+      }
+    } catch (err) {
+      console.warn('Exception fetching user profile:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const signOut = async () => {

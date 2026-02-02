@@ -30,6 +30,13 @@ export const COLORS = {
   glassBorder: 'rgba(255, 255, 255, 0.3)',
 };
 
+export const STORAGE_BUCKETS = {
+  USER_AVATARS: 'user-avatars',
+  PAL_AVATARS: 'pal-avatars',
+  PAL_FULLBODY: 'pal-fullbody',
+  POST_IMAGES: 'post-images',
+} as const;
+
 export const SPACING = {
   xs: 4,
   sm: 8,
