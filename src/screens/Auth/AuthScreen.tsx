@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: SPACING.md,
     backgroundColor: COLORS.text,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.full,
     alignItems: 'center',
     marginTop: SPACING.sm,
   },
