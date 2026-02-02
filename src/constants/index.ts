@@ -8,16 +8,16 @@ export const COLORS = {
   secondary: '#B9F6CA',
   secondaryLight: '#EAFFEF',
 
-  // Backgrounds
-  background: '#FFF8E1',
-  backgroundDark: '#1A1A1A',
+  // Backgrounds - Pure White/Black
+  background: '#FFFFFF',
+  backgroundDark: '#000000',
   surface: '#FFFFFF',
-  surfaceDark: '#2D2D2D',
+  surfaceDark: '#1A1A1A',
 
   // Text
-  text: '#37474F',
-  textSecondary: '#78909C',
-  textDark: '#ECEFF1',
+  text: '#000000',
+  textSecondary: '#666666',
+  textDark: '#FFFFFF',
 
   // Accents
   success: '#4CAF50',
@@ -28,6 +28,8 @@ export const COLORS = {
   // Glass effect (iOS26 style)
   glass: 'rgba(255, 255, 255, 0.25)',
   glassBorder: 'rgba(255, 255, 255, 0.3)',
+  glassDark: 'rgba(0, 0, 0, 0.25)',
+  glassBorderDark: 'rgba(255, 255, 255, 0.1)',
 };
 
 export const STORAGE_BUCKETS = {
