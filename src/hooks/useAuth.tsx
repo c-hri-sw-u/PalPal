@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        fetchUserProfile(session.user.id);
+        fetchUserProfile(session.user.id, session.user.email || undefined);
       } else {
         setLoading(false);
       }
@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         setSession(session);
         if (session?.user) {
-          await fetchUserProfile(session.user.id);
+          await fetchUserProfile(session.user.id, session.user.email || undefined);
         } else {
           setUser(null);
         }
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string, email?: string) => {
     try {
       const { data, error } = await supabase
         .from('users')
@@ -53,16 +53,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) {
-        console.warn('Error fetching user profile:', error);
-        // If the error is about type mismatch, try without .single()
-        if (error.message?.includes('type') || error.message?.includes('boolean')) {
-          const { data: users } = await supabase
+        // If user doesn't exist (PGRST116), create them
+        if (error.code === 'PGRST116') {
+          console.log('Creating new user profile...');
+          const { data: newUser, error: createError } = await supabase
             .from('users')
-            .select('*')
-            .eq('id', userId);
-          if (users && users.length > 0) {
-            setUser(users[0]);
+            .insert({
+              id: userId,
+              username: email?.split('@')[0] || `user_${userId.slice(0, 8)}`,
+            })
+            .select()
+            .single();
+          
+          if (!createError && newUser) {
+            setUser(newUser);
           }
+        } else {
+          console.warn('Error fetching user profile:', error);
         }
       } else if (data) {
         setUser(data);
