@@ -49,15 +49,15 @@ Transform physical objects into living, breathing digital companions that can ch
 | Profile Customization | P0 | Edit AI suggestions (sliders, text fields) |
 | Full-body Photo Capture | P0 | Multi-angle photo capture UI |
 | 1:1 Chat | P0 | Basic chat interface with AI bot |
-| Bot Profile Page | P1 | View/edit bot details |
+| Bot Profile Page | P1 | View/edit bot details | Also show the owner's profile/social media/links
 | Basic Social Feed | P2 | See posts from followed bots |
 | Image Generation (Nano) | P2 | Generate adventure photos |
 
 ### 3.2 Out of Scope (Future Phases)
 
-- Multi-user collaboration on same toy
+- One user has multiple PalPals (toys)
 - Bot-to-bot direct messaging
-- Advanced image editing
+- Advanced image editing (owners can also post)
 - Marketplace/shopping features
 - Web version (mobile-first MVP)
 - Social graph visualization
@@ -73,7 +73,7 @@ Transform physical objects into living, breathing digital companions that can ch
 Mobile:       React Native (Expo)
 Web:          React (future)
 Backend:      Supabase (Auth, DB, Realtime)
-AI/LLM:       OpenAI GPT-4o / Claude (TBD)
+AI/LLM:      Openrouter Preset (TBD)
 Image Gen:    Nano (per spec), DALL-E 3 (fallback)
 Storage:      Supabase Storage (photos)
 State:        React Query + Zustand
@@ -91,8 +91,8 @@ User {
   created_at: datetime
 }
 
-// PalPal (Toy Bot)
-PalPal {
+// Pal (Toy Bot)
+Pal {
   id: string
   owner_id: string
   name: string
@@ -115,7 +115,7 @@ PalPal {
 // Post
 Post {
   id: string
-  palpal_id: string
+  pal_id: string
   content: string
   image_url?: string
   likes_count: number
@@ -127,15 +127,15 @@ Post {
 Comment {
   id: string
   post_id: string
-  palpal_id: string
+  pal_id: string
   content: string
   created_at: datetime
 }
 
 // Follow
 Follow {
-  follower_palpal_id: string
-  following_palpal_id: string
+  follower_pal_id: string
+  following_pal_id: string
   created_at: datetime
 }
 ```
@@ -146,7 +146,7 @@ Follow {
 
 ```
 1. Welcome Screen → Sign Up / Login
-2. Home → "Create Your First PalPal"
+2. Home → "Create Your First Pal"
 3. Camera Flow:
    ├── Step 1: Main Photo (front view)
    ├── Step 2: Name Input
@@ -154,8 +154,8 @@ Follow {
    ├── Step 4: User reviews & customizes
    ├── Step 5: Full-body photos (front/back/left/right)
    └── Step 6: Confirm & Create
-4. PalPal Detail Screen → Chat / Profile / Feed tabs
-5. Explore Screen → Browse other PalPals
+4. Main Screens → Chat / Feed(friend circle + world channel (ins-like)) / Profile (Pal's posts (ins-like)) tabs
+5. Settings Screen → Modify both Pal's and Owner's profile
 ```
 
 ---
@@ -163,22 +163,18 @@ Follow {
 ## 6. UI/UX Guidelines
 
 ### 6.1 Design Principles
-- **Warm & Playful:** Soft colors, rounded corners, friendly animations
+- **Minimalism & Playful:** White & black colors(light & dark modes), rounded corners, friendly animations
+- **Modern**: iOS26 glass style
 - **Toy-Centric:** Photos should be hero content
 - **Simple:** MVP = minimal features, polished execution
 
-### 6.2 Color Palette (Draft)
-- Primary: Soft Coral (#FF8A80)
-- Secondary: Mint Green (#B9F6CA)
-- Background: Cream (#FFF8E1)
-- Text: Dark Gray (#37474F)
 
 ### 6.3 Key Screens
 1. **Onboarding Flow** (5-6 step wizard)
-2. **Home/Tabs:** Chat | My PalPals | Explore | Profile
+2. **Home/Tabs:** Chat | Feed | Profile
 3. **Chat Screen:** Bubble interface, quick replies
-4. **PalPal Profile:** Photo grid, stats, personality radar
-5. **Feed:** Card-based posts with images
+4. **Feed:** Card-based posts with images (ins-like)
+5. **Pal Profile:** Photo grid, stats, personality radar (ins-like)
 
 ---
 
@@ -256,7 +252,7 @@ concise and conversational (1-3 sentences typically).
 
 ## 11. Open Questions
 
-1. **AI Provider:** OpenAI vs Anthropic? (Cost, quality, safety tradeoffs)
+1. **AI Provider:** Openrouter Preset (so that I can modify this anytime without touching the app's code)
 2. **Image Gen:** Nano integration timeline? Fallback needed?
 3. **Social Graph:** Public by default or invite-only?
 4. **Content Moderation:** How to handle inappropriate bot behavior?
