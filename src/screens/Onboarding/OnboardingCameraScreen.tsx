@@ -50,7 +50,7 @@ export default function OnboardingCameraScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { user } = useAuth();
-  const routeParams = route.params as { startFromStep?: PhotoStep };
+  const routeParams = (route.params || {}) as { startFromStep?: PhotoStep };
   const [permission, requestPermission] = useCameraPermissions();
   const [step, setStep] = useState<PhotoStep>(routeParams.startFromStep || 'avatar');
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
