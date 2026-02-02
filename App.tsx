@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useColorScheme, ActivityIndicator, View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -173,7 +174,9 @@ export default function App() {
       <SafeAreaProvider>
         <AuthProvider>
           <NetworkTest />
-          <RootNavigation />
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <RootNavigation />
+          </GestureHandlerRootView>
         </AuthProvider>
       </SafeAreaProvider>
     </QueryClientProvider>
