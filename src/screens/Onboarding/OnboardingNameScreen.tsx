@@ -4,26 +4,55 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants';
 
 interface RouteParams {
-  photos: {
+  photos?: {
     avatar: string;
     front: string;
     back: string;
     left: string;
     right: string;
   };
+  avatarPhoto?: string;
 }
 
 export default function OnboardingNameScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { photos } = route.params as RouteParams;
+  const { photos, avatarPhoto } = route.params as RouteParams;
   const [name, setName] = useState('');
+
+  // Handle case where we have avatar from crop but need to take full body photos
+  const hasAvatar = photos?.avatar || avatarPhoto;
+  const needsFullBody = !photos?.front && !photos?.back && !photos?.left && !photos?.right;
+  
+  // If we have avatar but need full body, we should redirect to camera for full body
+  // For now, show a message that full body photos will be taken after
+  const hasFullPhotos = photos?.front || photos?.back || photos?.left || photos?.right;
 
   const handleNext = () => {
     if (!name.trim()) {
       return;
     }
-    navigation.navigate('OnboardingProfile', { photos, name: name.trim() });
+    
+    if (hasAvatar && needsFullBody) {
+      // Go take full body photos first
+      navigation.navigate('OnboardingCamera', { 
+        // Pass current photos state
+        startFromStep: 'front' 
+      });
+    } else if (hasFullPhotos) {
+      // We have full photos, go to profile
+      const allPhotos = {
+        avatar: photos.avatar || avatarPhoto || '',
+        front: photos.front || '',
+        back: photos.back || '',
+        left: photos.left || '',
+        right: photos.right || '',
+      };
+      navigation.navigate('OnboardingProfile', { photos: allPhotos, name: name.trim() });
+    } else {
+      // Fallback - go to camera
+      navigation.navigate('OnboardingCamera');
+    }
   };
 
   return (

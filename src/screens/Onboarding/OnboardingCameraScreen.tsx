@@ -48,9 +48,11 @@ const INITIAL_STATE: OnboardingState = {
 
 export default function OnboardingCameraScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { user } = useAuth();
+  const routeParams = route.params as { startFromStep?: PhotoStep };
   const [permission, requestPermission] = useCameraPermissions();
-  const [step, setStep] = useState<PhotoStep>('avatar');
+  const [step, setStep] = useState<PhotoStep>(routeParams.startFromStep || 'avatar');
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [state, setState] = useState<OnboardingState>(INITIAL_STATE);
   const cameraRef = useRef<any>(null);
@@ -121,11 +123,31 @@ export default function OnboardingCameraScreen() {
       const currentIndex = steps.indexOf(step);
       
       if (currentIndex < steps.length - 1) {
-        setStep(steps[currentIndex + 1]);
-        setCapturedPhoto(null);
+        const nextStep = steps[currentIndex + 1];
+        
+        if (step === 'avatar') {
+          // Save avatar to state first, then go to crop
+          setState(prev => ({ ...prev, avatarPhoto: capturedPhoto }));
+          navigation.navigate('OnboardingCrop', { photoUri: capturedPhoto });
+        } else {
+          setState(prev => ({
+            ...prev,
+            fullBodyPhotos: { ...prev.fullBodyPhotos, [step]: capturedPhoto }
+          }));
+          setStep(nextStep);
+          setCapturedPhoto(null);
+        }
       } else {
         // All photos taken, go to name input
-        navigation.navigate('OnboardingName', { photos: { ...state.fullBodyPhotos, avatar: capturedPhoto } });
+        // Note: avatar is already in state.avatarPhoto
+        const allPhotos = {
+          avatar: state.avatarPhoto || '',
+          front: state.fullBodyPhotos.front || '',
+          back: state.fullBodyPhotos.back || '',
+          left: state.fullBodyPhotos.left || '',
+          right: state.fullBodyPhotos.right || '',
+        };
+        navigation.navigate('OnboardingName', { photos: allPhotos });
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to save photo');
