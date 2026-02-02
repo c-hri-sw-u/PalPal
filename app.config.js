@@ -17,7 +17,7 @@ export default {
         orientation: 'portrait',
         icon: './assets/icon.png',
         userInterfaceStyle: 'light',
-        newArchEnabled: parseBool(process.env.NEW_ARCH_ENABLED, true),
+        newArchEnabled: parseBool(process.env.NEW_ARCH_ENABLED, false),
         splash: {
             image: './assets/splash-icon.png',
             resizeMode: 'contain',
