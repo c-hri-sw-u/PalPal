@@ -16,6 +16,29 @@ export default function OnboardingCropScreen({ route }: any) {
   
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        pan.setOffset({
+          x: pan.x._value,
+          y: pan.y._value
+        });
+        pan.setValue({ x: 0, y: 0 });
+      },
+      onPanResponderMove: Animated.event(
+        [
+          null,
+          { dx: pan.x, dy: pan.y }
+        ],
+        { useNativeDriver: false }
+      ),
+      onPanResponderRelease: () => {
+        pan.flattenOffset();
+      }
+    })
+  ).current;
 
   const handleConfirm = () => {
     // In a real app, you'd crop the image here
@@ -66,27 +89,6 @@ export default function OnboardingCropScreen({ route }: any) {
     </View>
   );
 }
-
-const panResponder = PanResponder.create({
-  onStartShouldSetPanResponder: () => true,
-  onPanResponderGrant: () => {
-    pan.setOffset({
-      x: pan.x._value,
-      y: pan.y._value
-    });
-    pan.setValue({ x: 0, y: 0 });
-  },
-  onPanResponderMove: Animated.event(
-    [
-      null,
-      { dx: pan.x, dy: pan.y }
-    ],
-    { useNativeDriver: false }
-  ),
-  onPanResponderRelease: () => {
-    pan.flattenOffset();
-  }
-});
 
 const styles = StyleSheet.create({
   container: {
