@@ -14,7 +14,8 @@ export interface Pal {
   id: string;
   owner_id: string;
   name: string;
-  photo_urls: string[]; // front, back, left, right
+  avatar_url?: string;
+  full_body_photos: string[]; // front, back, left, right
   mbti: string;
   traits: {
     extraversion: number;
