@@ -23,7 +23,7 @@ export default function OnboardingNameScreen() {
   // Handle case where we have avatar from crop but need to take full body photos
   const hasAvatar = photos?.avatar || avatarPhoto;
   const needsFullBody = !photos?.front && !photos?.back && !photos?.left && !photos?.right;
-  
+
   // If we have avatar but need full body, we should redirect to camera for full body
   // For now, show a message that full body photos will be taken after
   const hasFullPhotos = photos?.front || photos?.back || photos?.left || photos?.right;
@@ -32,27 +32,16 @@ export default function OnboardingNameScreen() {
     if (!name.trim()) {
       return;
     }
-    
-    if (hasAvatar && needsFullBody) {
-      // Go take full body photos first
-      navigation.navigate('OnboardingCamera', { 
-        // Pass current photos state
-        startFromStep: 'front' 
-      });
-    } else if (hasFullPhotos) {
-      // We have full photos, go to profile
-      const allPhotos = {
-        avatar: photos.avatar || avatarPhoto || '',
-        front: photos.front || '',
-        back: photos.back || '',
-        left: photos.left || '',
-        right: photos.right || '',
-      };
-      navigation.navigate('OnboardingProfile', { photos: allPhotos, name: name.trim() });
-    } else {
-      // Fallback - go to camera
-      navigation.navigate('OnboardingCamera');
-    }
+
+    // Always go to profile creation next
+    const allPhotos = {
+      avatar: photos?.avatar || avatarPhoto || '',
+      front: photos?.front || '',
+      back: photos?.back || '',
+      left: photos?.left || '',
+      right: photos?.right || '',
+    };
+    navigation.navigate('OnboardingProfile', { photos: allPhotos, name: name.trim() });
   };
 
   return (
@@ -72,8 +61,8 @@ export default function OnboardingNameScreen() {
         onSubmitEditing={handleNext}
       />
 
-      <TouchableOpacity 
-        style={[styles.button, !name.trim() && styles.buttonDisabled]} 
+      <TouchableOpacity
+        style={[styles.button, !name.trim() && styles.buttonDisabled]}
         onPress={handleNext}
         disabled={!name.trim()}
       >

@@ -37,7 +37,7 @@ export default function OnboardingProfileScreen() {
   const route = useRoute<any>();
   const { user } = useAuth();
   const { photos, name } = route.params as RouteParams;
-  
+
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [profile, setProfile] = useState<GeneratedProfile | null>(null);
@@ -64,21 +64,13 @@ export default function OnboardingProfileScreen() {
   const handleCreatePal = async () => {
     if (!user || !profile) return;
 
-    setLoading(true);
-    const pal = await createPal(
-      user.id,
+    // Proceed to full body photos
+    navigation.navigate('OnboardingCamera', {
+      startFromStep: 'front',
       name,
-      photos.avatar,
-      [photos.front, photos.back, photos.left, photos.right],
-      profile
-    );
-
-    if (pal) {
-      navigation.navigate('Home');
-    } else {
-      alert('Failed to create your Pal');
-    }
-    setLoading(false);
+      photos,
+      profile // Pass the generated profile
+    });
   };
 
   const updateTrait = (trait: keyof typeof profile.traits, value: number) => {
@@ -100,17 +92,17 @@ export default function OnboardingProfileScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <Text style={styles.title}>Customize {name}'s Personality</Text>
-      
+
       {/* MBTI Selector */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>MBTI Type</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.mbtiButton}
           onPress={() => setShowMBTISelector(!showMBTISelector)}
         >
           <Text style={styles.mbtiText}>{profile?.mbti}</Text>
         </TouchableOpacity>
-        
+
         {showMBTISelector && (
           <View style={styles.mbtiGrid}>
             {MBTI_OPTIONS.map(mbti => (
@@ -148,7 +140,7 @@ export default function OnboardingProfileScreen() {
             </Text>
           </View>
         ))}
-        
+
         {Object.entries(TRAIT_LABELS).map(([key, label]) => (
           <View key={key} style={styles.sliderContainer}>
             <Text style={styles.sliderMin}>0</Text>
@@ -163,13 +155,13 @@ export default function OnboardingProfileScreen() {
             <Text style={styles.sliderMax}>100</Text>
           </View>
         ))}
-        
+
         {/* Simplified slider for MVP - tap to increment/decrement */}
         <View style={styles.quickSlider}>
           {Object.entries(TRAIT_LABELS).map(([key, label]) => (
             <View key={key} style={styles.quickSliderRow}>
               <Text style={styles.quickSliderLabel}>{label.slice(0, 4)}</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.quickSliderBtn}
                 onPress={() => updateTrait(key as any, Math.max(0, (profile?.traits[key as keyof typeof profile.traits] ?? 50) - 10))}
               >
@@ -178,7 +170,7 @@ export default function OnboardingProfileScreen() {
               <Text style={styles.quickSliderValue}>
                 {profile?.traits[key as keyof typeof profile.traits]}
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.quickSliderBtn}
                 onPress={() => updateTrait(key as any, Math.min(100, (profile?.traits[key as keyof typeof profile.traits] ?? 50) + 10))}
               >
@@ -215,8 +207,8 @@ export default function OnboardingProfileScreen() {
 
       {/* Actions */}
       <View style={styles.actions}>
-        <TouchableOpacity 
-          style={[styles.button, styles.secondaryButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton]}
           onPress={regenerateProfile}
           disabled={generating}
         >
@@ -224,14 +216,14 @@ export default function OnboardingProfileScreen() {
             {generating ? 'Generating...' : 'Regenerate with AI'}
           </Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.button} 
+
+        <TouchableOpacity
+          style={styles.button}
           onPress={handleCreatePal}
           disabled={loading}
         >
           <Text style={styles.buttonText}>
-            {loading ? 'Creating...' : `Create ${name}!`}
+            {loading ? 'Creating...' : 'Continue'}
           </Text>
         </TouchableOpacity>
       </View>

@@ -8,7 +8,7 @@ interface GenerateProfileParams {
   avatarUrl?: string;
 }
 
-interface GeneratedProfile {
+export interface GeneratedProfile {
   mbti: string;
   traits: {
     extraversion: number;
@@ -25,7 +25,7 @@ export async function generateProfile(
   params: GenerateProfileParams
 ): Promise<GeneratedProfile> {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  
+
   if (!apiKey) {
     console.warn('No OpenRouter API key, using default profile');
     return getDefaultProfile(params.name);
@@ -65,10 +65,10 @@ Output JSON format only:
 
     const data = await response.json();
     const content = data.choices[0]?.message?.content;
-    
+
     // Parse JSON from response
     const parsed = JSON.parse(content || '{}');
-    
+
     return {
       mbti: parsed.mbti || 'ENFP',
       traits: {
