@@ -1,11 +1,14 @@
+// ... imports
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image as RNImage, Alert, Dimensions, SafeAreaView, ActivityIndicator } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { COLORS, SPACING, BORDER_RADIUS, STORAGE_BUCKETS } from '../../constants';
-import { uploadImage, generateFilePath } from '../../lib/storage';
+import * as ImagePicker from 'expo-image-picker';
+import { Image as ImageIcon } from 'lucide-react-native';
+import { COLORS, SPACING, BORDER_RADIUS } from '../../constants';
 import { createPal, GeneratedProfile } from '../../lib/ai';
 import { useAuth } from '../../hooks/useAuth';
+import { Ionicons } from '@expo/vector-icons'; // Assuming Ionicons is available, if not we'll use lucide-react-native matching CropScreen
 
 type PhotoStep = 'avatar' | 'front' | 'back' | 'left' | 'right';
 
@@ -29,6 +32,8 @@ const INITIAL_STATE: OnboardingState = {
   profile: null,
 };
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export default function OnboardingCameraScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -43,20 +48,11 @@ export default function OnboardingCameraScreen() {
   const [step, setStep] = useState<PhotoStep>(routeParams.startFromStep || 'avatar');
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [state, setState] = useState<OnboardingState>(INITIAL_STATE);
+  const [isCreating, setIsCreating] = useState(false);
   const cameraRef = useRef<any>(null);
 
   // Handle return from Crop Screen
-  useEffect(() => {
-    if (route.params?.croppedAvatar) {
-      console.log('Received cropped avatar:', route.params.croppedAvatar);
-      // Update state with cropped avatar
-      setState(prev => ({ ...prev, avatarPhoto: route.params.croppedAvatar }));
-      // Advance to next step (Front View)
-      setStep('front');
-      // Clear param to prevent re-triggering
-      navigation.setParams({ croppedAvatar: undefined });
-    }
-  }, [route.params?.croppedAvatar]);
+
 
   // Initialize state from params if available
   useEffect(() => {
@@ -116,8 +112,30 @@ export default function OnboardingCameraScreen() {
     }
   };
 
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setCapturedPhoto(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image from gallery');
+    }
+  };
+
   const handleSkip = async () => {
-    // Treat skip as confirming a null photo
+    // If skipping front step, we skip all body photos and finish
+    if (step === 'front') {
+      await finalizeCreation(null);
+      return;
+    }
+
+    // Otherwise treat skip as confirming a null photo for this step
     await processStep(null);
   };
 
@@ -174,6 +192,8 @@ export default function OnboardingCameraScreen() {
       return;
     }
 
+    setIsCreating(true);
+
     // Ensure we have current step photo included in the list
     const finalPhotos = { ...state.fullBodyPhotos };
     if (step !== 'avatar') {
@@ -203,10 +223,12 @@ export default function OnboardingCameraScreen() {
       if (pal) {
         navigation.navigate('Home');
       } else {
+        setIsCreating(false);
         Alert.alert('Error', 'Failed to create your Pal');
       }
     } catch (e) {
       console.error(e);
+      setIsCreating(false);
       Alert.alert('Error', 'An error occurred while creating your Pal');
     }
   };
@@ -218,36 +240,60 @@ export default function OnboardingCameraScreen() {
   return (
     <View style={styles.container}>
       {capturedPhoto ? (
-        <View style={styles.previewContainer}>
-          <Image source={{ uri: capturedPhoto }} style={styles.preview} />
-          <View style={styles.previewButtons}>
-            <TouchableOpacity style={styles.button} onPress={retakePhoto}>
-              <Text style={styles.buttonText}>Retake</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={confirmPhoto}>
-              <Text style={styles.buttonText}>Confirm</Text>
-            </TouchableOpacity>
+        <View style={styles.container}>
+          <RNImage source={{ uri: capturedPhoto }} style={styles.fullScreenPreview} />
+          <View style={styles.previewOverlay}>
+            <View style={styles.previewButtonContainer}>
+              <TouchableOpacity style={styles.retakeButton} onPress={retakePhoto} disabled={isCreating}>
+                <Text style={styles.retakeButtonText}>Retake</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmButton} onPress={confirmPhoto} disabled={isCreating}>
+                {isCreating ? (
+                  <ActivityIndicator color="#000" />
+                ) : (
+                  <Text style={styles.confirmButtonText}>Use Photo</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       ) : (
         <View style={{ flex: 1 }}>
           <CameraView style={styles.camera} ref={cameraRef} />
-          <View style={styles.overlay}>
-            <Text style={styles.stepLabel}>{photoStepLabels[step]}</Text>
-            <Text style={styles.instruction}>
-              {step === 'avatar'
-                ? 'Take a clear photo of your toy\'s face'
-                : 'Take a photo from this angle'}
-            </Text>
-            {step !== 'avatar' && (
-              <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-                <Text style={styles.skipButtonText}>Skip</Text>
+          <SafeAreaView style={styles.overlay}>
+            <View style={styles.headerSpacer} />
+            <View style={styles.instructionContainer}>
+              <Text style={styles.stepLabel}>{photoStepLabels[step]}</Text>
+              <Text style={styles.instruction}>
+                {step === 'avatar'
+                  ? 'Take a clear photo of your toy\'s face'
+                  : 'Take a photo from this angle'}
+              </Text>
+            </View>
+
+            <View style={styles.bottomControls}>
+              <TouchableOpacity style={styles.galleryButton} onPress={pickImage}>
+                <ImageIcon color="#fff" size={28} />
               </TouchableOpacity>
-            )}
-          </View>
-          <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>
-            <View style={styles.captureButtonInner} />
-          </TouchableOpacity>
+
+              <TouchableOpacity style={styles.captureButton} onPress={takePhoto}>
+                <View style={styles.captureButtonInner} />
+              </TouchableOpacity>
+
+              {step !== 'avatar' && (
+                <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+                  <Text style={styles.skipButtonText}>Skip</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </SafeAreaView>
+        </View>
+      )}
+
+      {isCreating && step !== 'avatar' && capturedPhoto && (
+        <View style={styles.fullScreenLoading}>
+          <ActivityIndicator size="large" color="#ffffff" />
+          <Text style={styles.loadingText}>Creating your Pal...</Text>
         </View>
       )}
     </View>
@@ -257,7 +303,7 @@ export default function OnboardingCameraScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#000',
   },
   permissionContainer: {
     flex: 1,
@@ -270,28 +316,41 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
+  headerSpacer: {
+    height: 60,
+  },
+  instructionContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+  },
   stepLabel: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   instruction: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    paddingHorizontal: 40,
+  },
+  bottomControls: {
+    width: '100%',
+    flexDirection: 'row', // Updated to row for side-by-side buttons
+    alignItems: 'center',
+    justifyContent: 'center', // Center the capture button
+    marginBottom: 50,
+    height: 100,
   },
   captureButton: {
-    position: 'absolute',
-    bottom: 50,
-    alignSelf: 'center',
     width: 80,
     height: 80,
     borderRadius: 40,
@@ -299,27 +358,65 @@ const styles = StyleSheet.create({
     borderColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 10,
   },
   captureButtonInner: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
     backgroundColor: '#fff',
   },
-  previewContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  skipButton: {
+    position: 'absolute',
+    right: 30,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+  },
+  skipButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  fullScreenPreview: {
+    ...StyleSheet.absoluteFillObject,
+    resizeMode: 'contain',
+    backgroundColor: '#000',
+  },
+  previewOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingBottom: 50,
+    paddingTop: 30,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  previewButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
     alignItems: 'center',
   },
-  preview: {
-    width: '100%',
-    height: '80%',
-    resizeMode: 'contain',
+  retakeButton: {
+    paddingVertical: 15,
+    paddingHorizontal: 30,
   },
-  previewButtons: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-    marginTop: SPACING.lg,
+  retakeButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  confirmButton: {
+    backgroundColor: '#fff',
+    paddingVertical: 15,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+  },
+  confirmButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   button: {
     paddingHorizontal: SPACING.xl,
@@ -339,16 +436,28 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xl,
     paddingHorizontal: SPACING.xl,
   },
-  skipButton: {
-    marginTop: SPACING.lg,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: BORDER_RADIUS.full,
+  fullScreenLoading: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
-  skipButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+  loadingText: {
+    color: '#ffffff',
+    marginTop: 20,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  galleryButton: {
+    position: 'absolute',
+    left: 40,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
 });

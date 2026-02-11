@@ -1,5 +1,6 @@
+// ... imports
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image as RNImage, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image as RNImage, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, runOnJS } from 'react-native-reanimated';
@@ -129,8 +130,8 @@ export default function OnboardingCropScreen() {
       setProcessing(false);
       // Navigate back to Camera screen to continue with next steps (Body photos)
       // We pass the cropped avatar back
-      navigation.navigate('OnboardingCamera', {
-        croppedAvatar: result.uri,
+      navigation.navigate('OnboardingName', {
+        avatarPhoto: result.uri,
       });
 
     } catch (error) {
@@ -147,7 +148,8 @@ export default function OnboardingCropScreen() {
   if (loading || !imageSize) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color="#ffffff" />
+        <Text style={styles.loadingText}>Loading image...</Text>
       </View>
     );
   }
@@ -164,60 +166,68 @@ export default function OnboardingCropScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleCancel} style={styles.iconButton}>
-          <ArrowLeft color="#fff" size={24} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Adjust Photo</Text>
-        <TouchableOpacity onPress={() => {
-          scale.value = withSpring(1);
-          translateX.value = withSpring(0);
-          translateY.value = withSpring(0);
-          savedScale.value = 1;
-          savedTranslateX.value = 0;
-          savedTranslateY.value = 0;
-        }} style={styles.iconButton}>
-          <RotateCcw color="#fff" size={20} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.editorContainer}>
-        {/* The Image */}
-        <GestureDetector gesture={composedGesture}>
-          <Animated.View style={[styles.imageContainer, { width: baseWidth, height: baseHeight }, animatedStyle]}>
-            <RNImage
-              source={{ uri: photoUri }}
-              style={{ width: '100%', height: '100%' }}
-            />
-          </Animated.View>
-        </GestureDetector>
-
-        {/* The Overlay */}
-        <View style={styles.overlay} pointerEvents="none">
-          {/* Huge border trick for mask */}
-          <View style={styles.maskBorder} />
-          <View style={styles.cropFrame} />
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleCancel} style={styles.iconButton}>
+            <ArrowLeft color="#fff" size={24} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Adjust Photo</Text>
+          <TouchableOpacity onPress={() => {
+            scale.value = withSpring(1);
+            translateX.value = withSpring(0);
+            translateY.value = withSpring(0);
+            savedScale.value = 1;
+            savedTranslateX.value = 0;
+            savedTranslateY.value = 0;
+          }} style={styles.iconButton}>
+            <RotateCcw color="#fff" size={20} />
+          </TouchableOpacity>
         </View>
 
-        <Text style={styles.instructionText} pointerEvents="none">
-          Pinch to zoom, drag to move
-        </Text>
-      </View>
+        <View style={styles.editorContainer}>
+          {/* The Image */}
+          <GestureDetector gesture={composedGesture}>
+            <Animated.View style={[styles.imageContainer, { width: baseWidth, height: baseHeight }, animatedStyle]}>
+              <RNImage
+                source={{ uri: photoUri }}
+                style={{ width: '100%', height: '100%' }}
+              />
+            </Animated.View>
+          </GestureDetector>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={processing}>
-          {processing ? (
-            <ActivityIndicator color="#000" />
-          ) : (
-            <>
-              <Check color="#000" size={20} style={{ marginRight: 8 }} />
-              <Text style={styles.saveButtonText}>Set Avatar</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+          {/* The Overlay */}
+          <View style={styles.overlay} pointerEvents="none">
+            <View style={styles.maskFiller} />
+            <View style={styles.maskRow}>
+              <View style={styles.maskFiller} />
+              <View style={styles.maskHole} />
+              <View style={styles.maskFiller} />
+            </View>
+            <View style={styles.maskFiller} />
+
+            {/* Crop Frame Border - placed absolutely or just use the hole border? 
+                Using an absolute view on top to draw the white border is safest to ensure it's on top of image but below text */}
+            <View style={styles.cropFrame} />
+          </View>
+
+          <Text style={styles.instructionText} pointerEvents="none">
+            Pinch to zoom, drag to move
+          </Text>
+        </View>
+
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={processing}>
+            {processing ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <>
+                <Check color="#000" size={20} style={{ marginRight: 8 }} />
+                <Text style={styles.saveButtonText}>Set Avatar</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -227,18 +237,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
+  safeArea: {
+    flex: 1,
+  },
   loadingContainer: {
     flex: 1,
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
+  },
+  loadingText: {
+    color: '#ffffff',
+    marginTop: 20,
+    fontSize: 16,
+    fontWeight: '500',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 10,
     paddingBottom: 20,
     zIndex: 10,
   },
@@ -248,9 +269,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -269,41 +290,75 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  maskBorder: {
+  maskFiller: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    width: '100%',
+  },
+  maskRow: {
+    height: CROP_AREA_SIZE,
+    width: '100%',
+    flexDirection: 'row',
+  },
+  maskHole: {
     width: CROP_AREA_SIZE,
     height: CROP_AREA_SIZE,
-    borderWidth: 2000,
-    borderColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'transparent',
   },
   cropFrame: {
     position: 'absolute',
     width: CROP_AREA_SIZE,
     height: CROP_AREA_SIZE,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.8)',
+    borderWidth: 2,
+    borderColor: '#fff',
+    borderRadius: 4,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 5,
   },
   instructionText: {
     position: 'absolute',
-    bottom: 20,
-    color: 'rgba(255,255,255,0.6)',
+    bottom: 30,
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 14,
+    fontWeight: '500',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   footer: {
-    padding: 30,
-    paddingBottom: 50,
+    padding: 24,
+    paddingBottom: 20,
     alignItems: 'center',
+    backgroundColor: '#000',
   },
   saveButton: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    paddingHorizontal: 32,
-    paddingVertical: 16,
+    width: '100%',
+    paddingVertical: 18,
     borderRadius: 30,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: "#fff",
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 3,
   },
   saveButtonText: {
     color: '#000',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
   },
 });

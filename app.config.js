@@ -17,14 +17,15 @@ export default {
         orientation: 'portrait',
         icon: './assets/icon.png',
         userInterfaceStyle: 'light',
-        newArchEnabled: parseBool(process.env.NEW_ARCH_ENABLED, false),
+        newArchEnabled: parseBool(process.env.NEW_ARCH_ENABLED, true),
         splash: {
             image: './assets/splash-icon.png',
             resizeMode: 'contain',
             backgroundColor: '#ffffff'
         },
         ios: {
-            supportsTablet: true
+            supportsTablet: true,
+            bundleIdentifier: 'com.palpal.app'
         },
         android: {
             adaptiveIcon: {
@@ -32,7 +33,8 @@ export default {
                 backgroundColor: '#ffffff'
             },
             edgeToEdgeEnabled: true,
-            predictiveBackGestureEnabled: false
+            predictiveBackGestureEnabled: false,
+            package: 'com.palpal.app'
         },
         web: {
             favicon: './assets/favicon.png'

@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Image, SafeAreaView, Dimensions } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../constants';
-import { generateProfile, createPal } from '../../lib/ai';
+import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../constants';
+import { generateProfile } from '../../lib/ai';
 import { useAuth } from '../../hooks/useAuth';
 import type { GeneratedProfile } from '../../lib/ai';
+import { Ionicons } from '@expo/vector-icons';
+
+import ProfileMBTI from './components/ProfileMBTI';
+import ProfileTraits from './components/ProfileTraits';
+import ProfileStory from './components/ProfileStory';
+import ProfilePsyche from './components/ProfilePsyche';
+import ProfileOverview from './components/ProfileOverview';
 
 interface RouteParams {
   photos: {
@@ -17,20 +24,7 @@ interface RouteParams {
   name: string;
 }
 
-const MBTI_OPTIONS = [
-  'INTJ', 'INTP', 'ENTJ', 'ENTP',
-  'INFJ', 'INFP', 'ENFJ', 'ENFP',
-  'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
-  'ISTP', 'ISFP', 'ESTP', 'ESFP',
-];
-
-const TRAIT_LABELS = {
-  extraversion: 'Extraversion',
-  agreeableness: 'Agreeableness',
-  openness: 'Openness',
-  conscientiousness: 'Conscientiousness',
-  neuroticism: 'Neuroticism',
-};
+const STEPS = ['MBTI', 'Personality', 'Story', 'Psyche', 'Overview'];
 
 export default function OnboardingProfileScreen() {
   const navigation = useNavigation<any>();
@@ -41,7 +35,7 @@ export default function OnboardingProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [profile, setProfile] = useState<GeneratedProfile | null>(null);
-  const [showMBTISelector, setShowMBTISelector] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
     loadGeneratedProfile();
@@ -61,6 +55,22 @@ export default function OnboardingProfileScreen() {
     setGenerating(false);
   };
 
+  const handleNext = () => {
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep(prev => prev + 1);
+    } else {
+      handleCreatePal();
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1);
+    } else {
+      navigation.goBack();
+    }
+  };
+
   const handleCreatePal = async () => {
     if (!user || !profile) return;
 
@@ -73,161 +83,97 @@ export default function OnboardingProfileScreen() {
     });
   };
 
-  const updateTrait = (trait: keyof typeof profile.traits, value: number) => {
-    setProfile(prev => prev ? {
-      ...prev,
-      traits: { ...prev.traits, [trait]: value }
-    } : null);
-  };
-
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.text} />
-        <Text style={styles.loadingText}>Creating your Pal's personality...</Text>
+        <Text style={styles.loadingText}>ANALYZING...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <Text style={styles.title}>Customize {name}'s Personality</Text>
-
-      {/* MBTI Selector */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>MBTI Type</Text>
-        <TouchableOpacity
-          style={styles.mbtiButton}
-          onPress={() => setShowMBTISelector(!showMBTISelector)}
-        >
-          <Text style={styles.mbtiText}>{profile?.mbti}</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={COLORS.text} />
         </TouchableOpacity>
 
-        {showMBTISelector && (
-          <View style={styles.mbtiGrid}>
-            {MBTI_OPTIONS.map(mbti => (
-              <TouchableOpacity
-                key={mbti}
-                style={[
-                  styles.mbtiOption,
-                  profile?.mbti === mbti && styles.mbtiOptionSelected
-                ]}
-                onPress={() => {
-                  setProfile(prev => prev ? { ...prev, mbti } : null);
-                  setShowMBTISelector(false);
-                }}
-              >
-                <Text style={[
-                  styles.mbtiOptionText,
-                  profile?.mbti === mbti && styles.mbtiOptionTextSelected
-                ]}>
-                  {mbti}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${((currentStep + 1) / STEPS.length) * 100}%` }
+              ]}
+            />
           </View>
+        </View>
+
+        <View style={styles.placeholder} />
+      </View>
+
+      <View style={styles.content}>
+        {currentStep === 0 && (
+          <ProfileMBTI
+            profile={profile}
+            onUpdate={(p) => setProfile(p)}
+          />
+        )}
+        {currentStep === 1 && (
+          <ProfileTraits
+            profile={profile}
+            onUpdate={(p) => setProfile(p)}
+          />
+        )}
+        {currentStep === 2 && (
+          <ProfileStory
+            profile={profile}
+            name={name}
+            onUpdate={(p) => setProfile(p)}
+          />
+        )}
+        {currentStep === 3 && (
+          <ProfilePsyche
+            profile={profile}
+            name={name}
+            onUpdate={(p) => setProfile(p)}
+          />
+        )}
+        {currentStep === 4 && (
+          <ProfileOverview
+            profile={profile}
+            name={name}
+          />
         )}
       </View>
 
-      {/* Trait Sliders */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Personality Traits</Text>
-        {Object.entries(TRAIT_LABELS).map(([key, label]) => (
-          <View key={key} style={styles.sliderRow}>
-            <Text style={styles.sliderLabel}>{label}</Text>
-            <Text style={styles.sliderValue}>
-              {profile?.traits[key as keyof typeof profile.traits]}
-            </Text>
-          </View>
-        ))}
-
-        {Object.entries(TRAIT_LABELS).map(([key, label]) => (
-          <View key={key} style={styles.sliderContainer}>
-            <Text style={styles.sliderMin}>0</Text>
-            <View style={styles.sliderTrack}>
-              <TouchableOpacity
-                style={[
-                  styles.sliderThumb,
-                  { left: `${((profile?.traits[key as keyof typeof profile.traits] ?? 50) / 100) * 100 - 5}%` }
-                ]}
-              />
-            </View>
-            <Text style={styles.sliderMax}>100</Text>
-          </View>
-        ))}
-
-        {/* Simplified slider for MVP - tap to increment/decrement */}
-        <View style={styles.quickSlider}>
-          {Object.entries(TRAIT_LABELS).map(([key, label]) => (
-            <View key={key} style={styles.quickSliderRow}>
-              <Text style={styles.quickSliderLabel}>{label.slice(0, 4)}</Text>
-              <TouchableOpacity
-                style={styles.quickSliderBtn}
-                onPress={() => updateTrait(key as any, Math.max(0, (profile?.traits[key as keyof typeof profile.traits] ?? 50) - 10))}
-              >
-                <Text style={styles.quickSliderBtnText}>-</Text>
-              </TouchableOpacity>
-              <Text style={styles.quickSliderValue}>
-                {profile?.traits[key as keyof typeof profile.traits]}
-              </Text>
-              <TouchableOpacity
-                style={styles.quickSliderBtn}
-                onPress={() => updateTrait(key as any, Math.min(100, (profile?.traits[key as keyof typeof profile.traits] ?? 50) + 10))}
-              >
-                <Text style={styles.quickSliderBtnText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Backstory */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Backstory</Text>
-        <TextInput
-          style={styles.textArea}
-          value={profile?.backstory}
-          onChangeText={(text) => setProfile(prev => prev ? { ...prev, backstory: text } : null)}
-          multiline
-          numberOfLines={4}
-        />
-      </View>
-
-      {/* Personality Description */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Personality Description</Text>
-        <TextInput
-          style={styles.textArea}
-          value={profile?.personality_description}
-          onChangeText={(text) => setProfile(prev => prev ? { ...prev, personality_description: text } : null)}
-          multiline
-          numberOfLines={4}
-        />
-      </View>
-
-      {/* Actions */}
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.button, styles.secondaryButton]}
-          onPress={regenerateProfile}
-          disabled={generating}
-        >
-          <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-            {generating ? 'Generating...' : 'Regenerate with AI'}
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.footer}>
+        {currentStep < 4 && (
+          <TouchableOpacity
+            onPress={regenerateProfile}
+            disabled={generating}
+            style={styles.regenerateLink}
+          >
+            {generating ? (
+              <ActivityIndicator size="small" color={COLORS.textSecondary} />
+            ) : (
+              <Text style={styles.regenerateText}>Re-roll</Text>
+            )}
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
-          style={styles.button}
-          onPress={handleCreatePal}
-          disabled={loading}
+          style={styles.continueButton}
+          onPress={handleNext}
+          activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>
-            {loading ? 'Creating...' : 'Continue'}
+          <Text style={styles.continueButtonText}>
+            {currentStep === STEPS.length - 1 ? 'Initialize Pal' : 'Continue'}
           </Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -236,178 +182,82 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  scrollContent: {
-    padding: SPACING.lg,
-    paddingTop: SPACING.xxl,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: SPACING.xl,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
   },
   loadingText: {
     marginTop: SPACING.md,
-    color: COLORS.textSecondary,
-  },
-  section: {
-    marginBottom: SPACING.xl,
-  },
-  sectionTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.text,
-    marginBottom: SPACING.md,
   },
-  mbtiButton: {
-    padding: SPACING.md,
-    backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 2,
-    borderColor: COLORS.text,
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  mbtiText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text,
-  },
-  mbtiGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: SPACING.md,
-  },
-  mbtiOption: {
-    padding: SPACING.sm,
-    backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.sm,
-    borderWidth: 1,
-    borderColor: COLORS.textSecondary,
-  },
-  mbtiOptionSelected: {
-    backgroundColor: COLORS.text,
-    borderColor: COLORS.text,
-  },
-  mbtiOptionText: {
-    fontSize: 12,
-    color: COLORS.text,
-  },
-  mbtiOptionTextSelected: {
-    color: COLORS.background,
-  },
-  sliderRow: {
-    flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.sm,
   },
-  sliderLabel: {
-    fontSize: 14,
-    color: COLORS.text,
+  backButton: {
+    padding: SPACING.sm,
   },
-  sliderValue: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
+  placeholder: {
+    width: 48,
   },
-  sliderContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  sliderMin: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    width: 20,
-  },
-  sliderMax: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    width: 30,
-    textAlign: 'right',
-  },
-  sliderTrack: {
+  progressContainer: {
     flex: 1,
-    height: 8,
-    backgroundColor: COLORS.surface,
-    borderRadius: 4,
-    marginHorizontal: 8,
-  },
-  sliderThumb: {
-    position: 'absolute',
-    width: 16,
-    height: 16,
-    backgroundColor: COLORS.text,
-    borderRadius: 8,
-    top: -4,
-  },
-  quickSlider: {
-    marginTop: SPACING.md,
-  },
-  quickSliderRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    paddingHorizontal: SPACING.xl,
   },
-  quickSliderLabel: {
-    width: 60,
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  quickSliderBtn: {
-    width: 32,
-    height: 32,
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.textSecondary,
-  },
-  quickSliderBtnText: {
-    fontSize: 18,
-    color: COLORS.text,
-  },
-  quickSliderValue: {
-    width: 40,
-    textAlign: 'center',
-    fontSize: 14,
-    color: COLORS.text,
-  },
-  textArea: {
+  progressBar: {
     width: '100%',
-    padding: SPACING.md,
-    backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.textSecondary,
-    fontSize: 14,
-    color: COLORS.text,
-    minHeight: 80,
-    textAlignVertical: 'top',
+    height: 4,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 2,
+    overflow: 'hidden',
   },
-  actions: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-    marginBottom: SPACING.xxl,
+  progressFill: {
+    height: '100%',
+    backgroundColor: COLORS.text,
+    borderRadius: 2,
   },
-  button: {
+  content: {
     flex: 1,
+  },
+  footer: {
+    padding: SPACING.xl,
+    paddingBottom: SPACING.xxl,
+  },
+  continueButton: {
+    width: '100%',
     padding: SPACING.md,
     backgroundColor: COLORS.text,
     borderRadius: BORDER_RADIUS.full,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  buttonText: {
-    color: COLORS.background,
+  continueButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    color: COLORS.background,
   },
-  secondaryButton: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 2,
-    borderColor: COLORS.text,
+  regenerateLink: {
+    alignItems: 'center',
+    padding: SPACING.sm,
+    marginBottom: SPACING.sm,
   },
-  secondaryButtonText: {
-    color: COLORS.text,
+  regenerateText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+    textDecorationLine: 'underline',
   },
 });

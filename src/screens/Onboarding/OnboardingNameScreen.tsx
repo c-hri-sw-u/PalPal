@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../constants';
 
@@ -21,12 +21,10 @@ export default function OnboardingNameScreen() {
   const [name, setName] = useState('');
 
   // Handle case where we have avatar from crop but need to take full body photos
-  const hasAvatar = photos?.avatar || avatarPhoto;
-  const needsFullBody = !photos?.front && !photos?.back && !photos?.left && !photos?.right;
+  const avatarUri = photos?.avatar || avatarPhoto;
 
   // If we have avatar but need full body, we should redirect to camera for full body
   // For now, show a message that full body photos will be taken after
-  const hasFullPhotos = photos?.front || photos?.back || photos?.left || photos?.right;
 
   const handleNext = () => {
     if (!name.trim()) {
@@ -45,30 +43,46 @@ export default function OnboardingNameScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Give your Pal a name</Text>
-      <Text style={styles.subtitle}>
-        What would you like to call your new companion?
-      </Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          {avatarUri && (
+            <View style={styles.polaroidContainer}>
+              <View style={styles.polaroidFrame}>
+                <Image
+                  source={{ uri: avatarUri }}
+                  style={styles.polaroidImage}
+                  resizeMode="cover"
+                />
+              </View>
+            </View>
+          )}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Enter a name..."
-        placeholderTextColor={COLORS.textSecondary}
-        value={name}
-        onChangeText={setName}
-        autoFocus
-        onSubmitEditing={handleNext}
-      />
+          <Text style={styles.title}>What's your Pal's name?</Text>
 
-      <TouchableOpacity
-        style={[styles.button, !name.trim() && styles.buttonDisabled]}
-        onPress={handleNext}
-        disabled={!name.trim()}
-      >
-        <Text style={styles.buttonText}>Continue</Text>
-      </TouchableOpacity>
-    </View>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter a name..."
+            placeholderTextColor={COLORS.textSecondary}
+            value={name}
+            onChangeText={setName}
+            autoFocus
+            onSubmitEditing={handleNext}
+          />
+
+          <TouchableOpacity
+            style={[styles.button, !name.trim() && styles.buttonDisabled]}
+            onPress={handleNext}
+            disabled={!name.trim()}
+          >
+            <Text style={styles.buttonText}>Continue</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -84,22 +98,48 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text,
     marginBottom: SPACING.md,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     color: COLORS.textSecondary,
     marginBottom: SPACING.xl,
+    textAlign: 'center',
+  },
+  polaroidContainer: {
+    marginBottom: SPACING.xl,
+    alignItems: 'center',
+    transform: [{ rotate: '-3deg' }],
+  },
+  polaroidFrame: {
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  polaroidImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 2,
+    backgroundColor: '#f0f0f0',
   },
   input: {
     width: '100%',
     padding: SPACING.md,
     backgroundColor: COLORS.surface,
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 2,
+    borderBottomWidth: 0.5,
     borderColor: COLORS.text,
     fontSize: 20,
     color: COLORS.text,
     marginBottom: SPACING.xl,
+    textAlign: 'center',
   },
   button: {
     width: '100%',

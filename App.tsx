@@ -1,19 +1,24 @@
 import { useEffect } from 'react';
-import { useColorScheme, ActivityIndicator, View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { useColorScheme, ActivityIndicator, View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import TabView, { SceneMap } from 'react-native-bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './src/hooks/useAuth';
-import HomeScreen from './src/screens/HomeScreen';
 import AuthScreen from './src/screens/Auth/AuthScreen';
+import ChatScreen from './src/screens/Chat/ChatScreen';
+import FeedScreen from './src/screens/Feed/FeedScreen';
+import ProfileScreen from './src/screens/Profile/ProfileScreen';
 import OnboardingCameraScreen from './src/screens/Onboarding/OnboardingCameraScreen';
 import OnboardingCropScreen from './src/screens/Onboarding/OnboardingCropScreen';
 import OnboardingNameScreen from './src/screens/Onboarding/OnboardingNameScreen';
 import OnboardingProfileScreen from './src/screens/Onboarding/OnboardingProfileScreen';
 import { COLORS } from './src/constants';
+
+import { useFonts, Ultra_400Regular } from '@expo-google-fonts/ultra';
 
 const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
@@ -56,7 +61,6 @@ function NetworkTest() {
 
       try {
         console.log('Pinging JSONPlaceholder...');
-        // Test a known working public JSON API
         const json = await fetchWithTimeout('https://jsonplaceholder.typicode.com/todos/1', { method: 'GET', timeout: 5000 });
         console.log('JSONPlaceholder Reachable:', json.status);
       } catch (e: any) {
@@ -80,7 +84,6 @@ function NetworkTest() {
         console.log('Project URL Body Length:', text.length);
       } catch (e: any) {
         console.error('Project URL Unreachable:', e.message || e);
-        // Log detailed error info if available
         if (e.cause) console.log('Error Cause:', JSON.stringify(e.cause));
         console.log('Error JSON:', JSON.stringify(e));
         if (e.name === 'AbortError') {
@@ -104,12 +107,39 @@ function NetworkTest() {
   return null;
 }
 
-function RootNavigation() {
+// Native iOS SwiftUI Tab Bar with Liquid Glass effect (iOS 26+)
+function HomeTabs() {
+  const renderScene = SceneMap({
+    chat: ChatScreen,
+    feed: FeedScreen,
+    profile: ProfileScreen,
+  });
+
+  return (
+    <TabView
+      navigationState={{
+        index: 0,
+        routes: [
+          { key: 'chat', title: 'Chat', sfSymbol: 'message.fill' },
+          { key: 'feed', title: 'Feed', sfSymbol: 'newspaper.fill' },
+          { key: 'profile', title: 'Profile', sfSymbol: 'person.fill' },
+        ],
+      }}
+      renderScene={renderScene}
+      onIndexChange={() => { }}
+    />
+  );
+}
+
+const RootNavigation = () => {
   const { session, loading } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const [fontsLoaded] = useFonts({
+    Ultra_400Regular,
+  });
 
-  if (loading) {
+  if (loading || !fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.text} />
@@ -131,7 +161,7 @@ function RootNavigation() {
           <>
             <Stack.Screen
               name="Home"
-              component={HomeScreen}
+              component={HomeTabs}
               options={{ headerShown: false }}
             />
             <Stack.Screen
